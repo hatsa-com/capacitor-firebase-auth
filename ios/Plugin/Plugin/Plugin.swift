@@ -152,6 +152,8 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             return
         }
 
+        let isNewUser = authResult?.additionalUserInfo?.isNewUser ?? false
+
         // For all providers except apple we don't need any extra steps.
         // We can return the result
         if (providerId != "apple.com"){
@@ -159,6 +161,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             let jsPluginResult: PluginResultData = [
                 "callbackId": callbackId,
                 "providerId": call.getString("providerId") ?? "",
+                "isNewUser": isNewUser
             ]
 
             // Merged with provider related data
@@ -197,7 +200,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                     "callbackId": callbackId,
                     "providerId": call.getString("providerId") ?? "",
                     "customToken": customToken ?? "",
-                    "isNewUser": authResult?.additionalUserInfo?.isNewUser ?? false
+                    "isNewUser": isNewUser
                 ]
 
                 // Merged with provider related data

@@ -73,7 +73,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
 
         DispatchQueue.main.async {
             if (theProvider.isAuthenticated()) {
-                self.buildResult();
+                self.buildResult(authResult: nil);
                 return
             }
 
@@ -100,7 +100,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
         if (self.nativeAuth) {
             self.authenticate(credential: credential)
         } else {
-            self.buildResult()
+            self.buildResult(authResult: nil)
         }
     }
 
@@ -128,11 +128,11 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 return
             }
 
-            self.buildResult();
+            self.buildResult(authResult: authResult);
         }
     }
 
-    func buildResult() {
+    func buildResult(authResult: AuthDataResult?) {
         guard let callbackId = self.callbackId else {
             print("Ops, there is no callbackId building result")
             return
@@ -197,13 +197,12 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                     "callbackId": callbackId,
                     "providerId": call.getString("providerId") ?? "",
                     "customToken": customToken ?? "",
+                    "isNewUser": authResult?.additionalUserInfo?.isNewUser ?? false
                 ]
 
                 // Merged with provider related data
                 let jsResult: PluginResultData = provider.fillResult(data: jsPluginResult)
                 let currentDisplayName: String? = Auth.auth().currentUser?.displayName ?? nil
-
-                print("Current display name: \(currentDisplayName ?? "nil")")
 
                 // If user displayName is set, return the result
                 if currentDisplayName != nil {

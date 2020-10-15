@@ -127,11 +127,11 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 print("Ops, there is no saved call building result")
                 return
             }
-            
+
             self.buildResult(credential: credential, authResult: authResult);
         }
     }
-    
+
     func buildResult(credential: AuthCredential?, authResult: AuthDataResult?) {
         guard let callbackId = self.callbackId else {
             print("Ops, there is no callbackId building result")
@@ -165,7 +165,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             ]
 
             // Merged with provider related data
-            let jsResult: PluginResultData = provider.fillResult(data: jsPluginResult)
+            let jsResult: PluginResultData = provider.fillResult(credential: credential, data: jsPluginResult)
             return call.success(jsResult)
         }
 
@@ -204,7 +204,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 ]
 
                 // Merged with provider related data
-                let jsResult: PluginResultData = provider.fillResult(data: jsPluginResult)
+                let jsResult: PluginResultData = provider.fillResult(credential: credential, data: jsPluginResult)
                 let currentDisplayName: String? = Auth.auth().currentUser?.displayName ?? nil
 
                 // If user displayName is set, return the result

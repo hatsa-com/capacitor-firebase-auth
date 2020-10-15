@@ -1,5 +1,5 @@
-import { Plugins } from '@capacitor/core';
-import firebase from 'firebase/app';
+import { registerWebPlugin, Plugins, Capacitor } from '@capacitor/core';
+import * as firebase from 'firebase/app';
 import 'firebase/auth';
 import { Observable, throwError } from 'rxjs';
 import {
@@ -10,9 +10,13 @@ import {
 	SignInOptions,
 	TwitterSignInResult
 } from './definitions';
+import {CapacitorFirebaseAuth} from './web';
 
-// @ts-ignore
 const plugin: CapacitorFirebaseAuthPlugin = Plugins.CapacitorFirebaseAuth;
+
+if (Capacitor.platform === 'web') {
+    registerWebPlugin(CapacitorFirebaseAuth)
+}
 
 /**
  * Call the sign in method on native layer and sign in on web layer with retrieved credentials.

@@ -1,32 +1,32 @@
 {
-  "_args": [
-    [
-      "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
-      "/Users/florisvink/Documents/Development/hatsa/apps/capacitor"
-    ]
-  ],
-  "_from": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
-  "_id": "capacitor-firebase-auth@git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git#f75d522d6f65a10bb429cf502e970b9fe6f4e1c7",
-  "_inBundle": false,
-  "_integrity": "",
-  "_location": "/capacitor-firebase-auth",
-  "_phantomChildren": {
-    "tslib": "1.10.0"
-  },
-  "_requested": {
-    "type": "git",
-    "raw": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
-    "rawSpec": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
-    "saveSpec": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
-    "fetchSpec": "https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
-    "gitCommittish": null
-  },
-  "_requiredBy": [
-    "/"
-  ],
-  "_resolved": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git#f75d522d6f65a10bb429cf502e970b9fe6f4e1c7",
-  "_spec": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
-  "_where": "/Users/florisvink/Documents/Development/hatsa/apps/capacitor",
+	"_args": [
+		[
+			"git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
+			"/Users/florisvink/Documents/Development/hatsa/apps/capacitor"
+		]
+	],
+	"_from": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
+	"_id": "capacitor-firebase-auth@git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git#f75d522d6f65a10bb429cf502e970b9fe6f4e1c7",
+	"_inBundle": false,
+	"_integrity": "",
+	"_location": "/capacitor-firebase-auth",
+	"_phantomChildren": {
+		"tslib": "1.10.0"
+	},
+	"_requested": {
+		"type": "git",
+		"raw": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
+		"rawSpec": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
+		"saveSpec": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
+		"fetchSpec": "https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
+		"gitCommittish": null
+	},
+	"_requiredBy": [
+		"/"
+	],
+	"_resolved": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git#f75d522d6f65a10bb429cf502e970b9fe6f4e1c7",
+	"_spec": "git+https://github.com/sebastiaan-hatsa/capacitor-firebase-auth.git",
+	"_where": "/Users/florisvink/Documents/Development/hatsa/apps/capacitor",
 	"name": "capacitor-firebase-auth",
 	"version": "2.3.2",
 	"description": "Capacitor plugin for Firebase Authentication",

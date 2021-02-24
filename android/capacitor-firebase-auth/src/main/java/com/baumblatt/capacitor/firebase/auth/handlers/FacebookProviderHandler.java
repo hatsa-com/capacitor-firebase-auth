@@ -13,8 +13,11 @@ import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PluginCall;
+import com.google.android.gms.common.util.ArrayUtils;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FacebookAuthProvider;
+
+import static com.baumblatt.capacitor.firebase.auth.CapacitorFirebaseAuth.CONFIG_KEY_PREFIX;
 
 public class FacebookProviderHandler implements ProviderHandler {
     private static final String FACEBOOK_TAG = "TwitterProviderHandler";
@@ -30,7 +33,8 @@ public class FacebookProviderHandler implements ProviderHandler {
 
         try {
             this.loginButton = new LoginButton(this.plugin.getContext());
-            this.loginButton.setPermissions("email", "public_profile");
+            String[] permissions = this.plugin.getConfig().getArray(CONFIG_KEY_PREFIX + "permissions.facebook", new String[0]);
+            this.loginButton.setPermissions(ArrayUtils.concat(new String[]{"email", "public_profile"}, permissions));
 
             this.mCallbackManager = CallbackManager.Factory.create();
 

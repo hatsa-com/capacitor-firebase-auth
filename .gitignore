@@ -3,6 +3,7 @@
 android/build
 android/capacitor-firebase-auth.iml
 android/local.properties
+android/.gradle
 ios/Plugin/Pods
 capacitor-firebase-auth-nightly.tgz
 

@@ -16,7 +16,10 @@ class FacebookProviderHandler: NSObject, ProviderHandler {
     }
     
     func signIn(call: CAPPluginCall) {
-        self.loginManager!.logIn(permissions: ["public_profile", "email"], from: self.plugin!.bridge.viewController) {
+        let permissions = self.plugin?.getConfigValue("permissions") as? [String:Any] ?? [:]
+        let scopes = permissions["facebook"] as? [String] ?? []
+        
+        self.loginManager!.logIn(permissions: ["public_profile", "email"] + scopes, from: self.plugin!.bridge.viewController) {
             ( result: LoginManagerLoginResult?, error: Error?) in
             
             if let error = error {

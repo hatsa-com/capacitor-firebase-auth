@@ -71,7 +71,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
         self.callbackId = callbackId
         call.save()
 
-        DispatchQueue.main.async {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             if (theProvider.isAuthenticated()) {
                 self.buildResult(authResult: nil);
                 return
@@ -118,21 +118,12 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 return
             }
 
-            guard let callbackId = self.callbackId else {
-                print("Ops, there is no callbackId building result")
-                return
-            }
-
-            guard self.bridge.getSavedCall(callbackId) != nil else {
-                print("Ops, there is no saved call building result")
-                return
-            }
-
             self.buildResult(authResult: authResult);
         }
     }
 
     func buildResult(authResult: AuthDataResult?) {
+
         guard let callbackId = self.callbackId else {
             print("Ops, there is no callbackId building result")
             return

@@ -13,6 +13,7 @@ import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PluginCall;
+import com.getcapacitor.Config;
 import com.google.android.gms.common.util.ArrayUtils;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FacebookAuthProvider;
@@ -33,7 +34,7 @@ public class FacebookProviderHandler implements ProviderHandler {
 
         try {
             this.loginButton = new LoginButton(this.plugin.getContext());
-            String[] permissions = this.plugin.getConfig().getArray(CONFIG_KEY_PREFIX + "permissions.facebook", new String[0]);
+            String[] permissions = Config.getArray(CONFIG_KEY_PREFIX + "permissions.facebook", new String[0]);
             this.loginButton.setPermissions(ArrayUtils.concat(new String[]{"email", "public_profile"}, permissions));
 
             this.mCallbackManager = CallbackManager.Factory.create();

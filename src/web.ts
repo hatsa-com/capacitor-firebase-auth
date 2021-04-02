@@ -12,6 +12,15 @@ export class CapacitorFirebaseAuthWeb extends WebPlugin implements CapacitorFire
   async signIn(options: {providerId: string;}): Promise<SignInResult> {
     return Promise.resolve({providerId: options.providerId, idToken: undefined});
   }
+  
+  async signInAndLink(options: {providerId: string;}): Promise<SignInResult> {
+    return Promise.resolve({providerId: options.providerId, idToken: undefined});
+  }
+
+  // @ts-ignore
+  async unlink(options: { providerId: string; }): Promise<void> {
+    return Promise.resolve();
+  }
 
   // @ts-ignore
   async signOut(options: {}): Promise<void> {

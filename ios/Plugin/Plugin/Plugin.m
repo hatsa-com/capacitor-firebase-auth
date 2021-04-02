@@ -6,4 +6,6 @@
 CAP_PLUGIN(CapacitorFirebaseAuth, "CapacitorFirebaseAuth",
            CAP_PLUGIN_METHOD(signIn, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(signOut, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(signInAndLink, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(unlink, CAPPluginReturnPromise);
 )

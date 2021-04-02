@@ -18,6 +18,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
     var providersNames: [String] = [];
     var languageCode: String = "en"
     var nativeAuth: Bool = false
+    var shouldLinkProvider: Bool = false
 
     var callbackId: String? = nil
     var providers: ProvidersMap = [:]
@@ -81,6 +82,27 @@ public class CapacitorFirebaseAuth: CAPPlugin {
         }
 
     }
+    
+    @objc func signInAndLink(_ call: CAPPluginCall) {
+        shouldLinkProvider = true
+        signIn(call)
+    }
+    
+    @objc func unlink(_ call: CAPPluginCall) {
+        guard let providerId = call.getString("providerId") else {
+            call.error("The provider Id is required")
+            return
+        }
+        
+        Auth.auth().currentUser?.unlink(fromProvider: providerId) { (user, error) in
+            if let error = error {
+                self.handleError(message: error.localizedDescription)
+                return
+            }
+            
+            call.success()
+        }
+    }
 
     func getProvider(call: CAPPluginCall) -> ProviderHandler? {
         guard let providerId = call.getString("providerId") else {
@@ -117,8 +139,19 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 self.handleError(message: "There is no token in Facebook sign in.")
                 return
             }
-
-            self.buildResult(authResult: authResult);
+            
+            if (self.shouldLinkProvider){
+                authResult?.user.link(with: credential) { (authResult, error) in
+                    if let error = error {
+                        self.handleError(message: error.localizedDescription)
+                        return
+                    }
+                    
+                    self.buildResult(authResult: authResult);
+                }
+            } else {
+                self.buildResult(authResult: authResult);
+            }
         }
     }
 

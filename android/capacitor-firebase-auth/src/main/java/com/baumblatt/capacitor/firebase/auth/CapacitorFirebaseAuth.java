@@ -24,12 +24,14 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserInfo;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
 
 import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @NativePlugin(requestCodes = {
         GoogleProviderHandler.RC_GOOGLE_SIGN_IN,
@@ -45,6 +47,8 @@ public class CapacitorFirebaseAuth extends Plugin {
     private SparseArray<ProviderHandler> providerHandlerByRC = new SparseArray<>();
 
     private boolean nativeAuth = false;
+
+    private boolean shouldLinkProvider = false;
 
     public void load() {
         super.load();
@@ -95,6 +99,16 @@ public class CapacitorFirebaseAuth extends Plugin {
         }
     }
 
+    private boolean isAuthenticated(ProviderHandler handler) {
+        try {
+            return handler.isAuthenticated()
+                && !shouldLinkProvider; // Force re-login when linking accounts
+        } catch (Exception e) {
+            Log.w(PLUGIN_TAG, e);
+            return false;
+        }
+    }
+
     @PluginMethod()
     public void signIn(PluginCall call) {
         if (!call.getData().has("providerId")) {
@@ -109,14 +123,44 @@ public class CapacitorFirebaseAuth extends Plugin {
             call.reject("The provider is disable or unsupported");
         } else {
 
-            if (handler.isAuthenticated()) {
+            if (isAuthenticated(handler)) {
                 JSObject jsResult = this.build(call);
                 call.success(jsResult);
             } else {
                 this.saveCall(call);
                 handler.signIn(call);
             }
+        }
+    }
 
+    @PluginMethod()
+    public void signInAndLink(PluginCall call) {
+        shouldLinkProvider = true;
+        signIn(call);
+    }
+
+    @PluginMethod()
+    public void unlink(final PluginCall call) {
+        if (!call.getData().has("providerId")) {
+            call.reject("The provider id is required");
+            return;
+        }
+
+        String providerId = call.getString("providerId", null);
+        FirebaseUser currentUser = this.mAuth.getCurrentUser();
+
+        if (currentUser == null) {
+            call.reject("The user is not signed in");
+        } else {
+            currentUser.unlink(providerId)
+                .addOnCompleteListener(this.getActivity(), new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            call.success();
+                        }
+                    }
+                });
         }
     }
 
@@ -205,8 +249,12 @@ public class CapacitorFirebaseAuth extends Plugin {
                                 Log.w(PLUGIN_TAG, "Ops, no Firebase user after Sign In with Credential succeed.");
                                 savedCall.reject("Ops, no Firebase user after Sign In with Credential succeed");
                             } else {
-                                JSObject jsResult = build(savedCall);
-                                savedCall.success(jsResult);
+                                if (shouldLinkProvider) {
+                                    linkProvider(savedCall, credential);
+                                } else {
+                                    JSObject jsResult = build(savedCall);
+                                    savedCall.success(jsResult);
+                                }
                             }
                         } else {
                             // If sign in fails, display a message to the user.
@@ -223,6 +271,58 @@ public class CapacitorFirebaseAuth extends Plugin {
 
                     }
         });
+    }
+
+    private boolean isProviderLinked(final FirebaseUser currentUser, final String providerId) {
+        for (UserInfo userInfo : currentUser.getProviderData()) {
+            if(providerId.equals(userInfo.getProviderId())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void linkProvider(final PluginCall savedCall, final AuthCredential credential) {
+        FirebaseUser currentUser = this.mAuth.getCurrentUser();
+        final String providerId = savedCall.getString("providerId");
+
+        if (currentUser == null) {
+            savedCall.reject("Can not link provider: user is not signed in");
+            return;
+        }
+
+        if(isProviderLinked(currentUser, providerId)) {
+            Log.d(PLUGIN_TAG, "Provider '" + providerId + "' is already linked to account.");
+
+            JSObject jsResult = build(savedCall);
+            savedCall.success(jsResult);
+            return;
+        }
+
+        currentUser.linkWithCredential(credential)
+            .addOnCompleteListener(this.getActivity(), new OnCompleteListener<AuthResult>() {
+                @Override
+                public void onComplete(@NonNull Task<AuthResult> task) {
+                    if (task.isSuccessful()) {
+                        Log.d(PLUGIN_TAG, "linkWithCredential:success");
+
+                        JSObject jsResult = build(savedCall);
+                        savedCall.success(jsResult);
+                        return;
+                    }
+
+                    Log.w(PLUGIN_TAG, "linkWithCredential:failure", task.getException());
+                    savedCall.reject("Can not link provider: " + Objects.requireNonNull(task.getException()).getLocalizedMessage());
+                }
+            })
+            .addOnFailureListener(this.getActivity(), new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception ex) {
+                    Log.w(PLUGIN_TAG, "Firebase Link Provider failure.", ex);
+                    savedCall.reject("Firebase Link Provider failure.");
+                }
+            });
     }
 
     public void handleFailure(String message, Exception e) {

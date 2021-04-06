@@ -125,6 +125,14 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             self.buildResult(authResult: nil)
         }
     }
+    
+    func isProviderLinked(providerId: String) -> Bool {
+        guard let providerData = Auth.auth().currentUser?.providerData else {
+            return false
+        }
+        
+        return providerData.contains(where: { $0.providerID == providerId });
+    }
 
     func authenticate(credential: AuthCredential) {
         Auth.auth().signIn(with: credential) { (authResult, error) in
@@ -140,7 +148,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 return
             }
             
-            if (self.shouldLinkProvider){
+            if (self.shouldLinkProvider && !self.isProviderLinked(providerId: credential.provider)){
                 authResult?.user.link(with: credential) { (authResult, error) in
                     if let error = error {
                         self.handleError(message: error.localizedDescription)

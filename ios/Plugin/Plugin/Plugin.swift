@@ -151,6 +151,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             if (self.shouldLinkProvider && !self.isProviderLinked(providerId: credential.provider)){
                 authResult?.user.link(with: credential) { (authResult, error) in
                     if let error = error {
+                        print("==> Error: \(error) | \(error.localizedDescription)")
                         self.handleError(message: error.localizedDescription)
                         return
                     }

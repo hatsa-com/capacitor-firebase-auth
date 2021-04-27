@@ -59,6 +59,8 @@ public class CapacitorFirebaseAuth: CAPPlugin {
     }
 
     @objc func signIn(_ call: CAPPluginCall) {
+        shouldLinkProvider = false
+        
         guard let theProvider : ProviderHandler = self.getProvider(call: call) else {
             // call.reject inside getProvider
             return
@@ -80,12 +82,26 @@ public class CapacitorFirebaseAuth: CAPPlugin {
 
             theProvider.signIn(call: call)
         }
-
     }
     
     @objc func signInAndLink(_ call: CAPPluginCall) {
         shouldLinkProvider = true
-        signIn(call)
+        
+        guard let theProvider : ProviderHandler = self.getProvider(call: call) else {
+            return
+        }
+
+        guard let callbackId = call.callbackId else {
+            call.error("The call has no callbackId")
+            return
+        }
+
+        self.callbackId = callbackId
+        call.save()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            theProvider.signIn(call: call)
+        }
     }
     
     @objc func unlink(_ call: CAPPluginCall) {
@@ -119,6 +135,26 @@ public class CapacitorFirebaseAuth: CAPPlugin {
     }
 
     func handleAuthCredentials(credential: AuthCredential) {
+        let shoulLink = self.shouldLinkProvider && !self.isProviderLinked(providerId: credential.provider)
+        
+        if(shoulLink){
+            guard let currentUser = Auth.auth().currentUser else {
+                self.handleError(message: "Can not link provider because a user is not signed in")
+                return
+            }
+            
+            currentUser.link(with: credential) { (authResult, error) in
+                if let error = error {
+                    self.handleError(message: error.localizedDescription)
+                    return
+                }
+                
+                self.buildResult(authResult: authResult);
+            }
+            
+            return // It's a "link provider" call we don't want to authenticate the user
+        }
+        
         if (self.nativeAuth) {
             self.authenticate(credential: credential)
         } else {
@@ -148,18 +184,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 return
             }
             
-            if (self.shouldLinkProvider && !self.isProviderLinked(providerId: credential.provider)){
-                authResult?.user.link(with: credential) { (authResult, error) in
-                    if let error = error {
-                        self.handleError(message: error.localizedDescription)
-                        return
-                    }
-                    
-                    self.buildResult(authResult: authResult);
-                }
-            } else {
-                self.buildResult(authResult: authResult);
-            }
+            self.buildResult(authResult: authResult);
         }
     }
 

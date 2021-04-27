@@ -34,9 +34,9 @@ import java.util.Map;
 import java.util.Objects;
 
 @NativePlugin(requestCodes = {
-        GoogleProviderHandler.RC_GOOGLE_SIGN_IN,
-        TwitterAuthConfig.DEFAULT_AUTH_REQUEST_CODE,
-        FacebookProviderHandler.RC_FACEBOOK_LOGIN
+    GoogleProviderHandler.RC_GOOGLE_SIGN_IN,
+    TwitterAuthConfig.DEFAULT_AUTH_REQUEST_CODE,
+    FacebookProviderHandler.RC_FACEBOOK_LOGIN
 })
 public class CapacitorFirebaseAuth extends Plugin {
     public static final String CONFIG_KEY_PREFIX = "plugins.CapacitorFirebaseAuth.";
@@ -99,18 +99,10 @@ public class CapacitorFirebaseAuth extends Plugin {
         }
     }
 
-    private boolean isAuthenticated(ProviderHandler handler) {
-        try {
-            return handler.isAuthenticated()
-                && !shouldLinkProvider; // Force re-login when linking accounts
-        } catch (Exception e) {
-            Log.w(PLUGIN_TAG, e);
-            return false;
-        }
-    }
-
     @PluginMethod()
     public void signIn(PluginCall call) {
+        shouldLinkProvider = false;
+
         if (!call.getData().has("providerId")) {
             call.reject("The provider id is required");
             return;
@@ -122,8 +114,7 @@ public class CapacitorFirebaseAuth extends Plugin {
             Log.w(PLUGIN_TAG, "Provider not supported");
             call.reject("The provider is disable or unsupported");
         } else {
-
-            if (isAuthenticated(handler)) {
+            if (handler.isAuthenticated()) {
                 JSObject jsResult = this.build(call);
                 call.success(jsResult);
             } else {
@@ -136,7 +127,21 @@ public class CapacitorFirebaseAuth extends Plugin {
     @PluginMethod()
     public void signInAndLink(PluginCall call) {
         shouldLinkProvider = true;
-        signIn(call);
+
+        if (!call.getData().has("providerId")) {
+            call.reject("The provider id is required");
+            return;
+        }
+
+        ProviderHandler handler = this.getProviderHandler(call);
+
+        if (handler == null) {
+            Log.w(PLUGIN_TAG, "Provider not supported");
+            call.reject("The provider is disable or unsupported");
+        } else {
+            this.saveCall(call);
+            handler.signIn(call);
+        }
     }
 
     @PluginMethod()
@@ -227,6 +232,11 @@ public class CapacitorFirebaseAuth extends Plugin {
             return;
         }
 
+        if (shouldLinkProvider) {
+            linkProvider(savedCall, credential);
+            return; // It's a "link provider" call we don't want to authenticate the user
+        }
+
         if (this.nativeAuth) {
             nativeAuth(savedCall, credential);
         } else {
@@ -237,39 +247,35 @@ public class CapacitorFirebaseAuth extends Plugin {
 
     private void nativeAuth(final PluginCall savedCall, final AuthCredential credential) {
         this.mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this.getActivity(), new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            Log.d(PLUGIN_TAG, "Firebase Sign In with Credential succeed.");
-                            FirebaseUser user = mAuth.getCurrentUser();
+            .addOnCompleteListener(this.getActivity(), new OnCompleteListener<AuthResult>() {
+                @Override
+                public void onComplete(@NonNull Task<AuthResult> task) {
+                    if (task.isSuccessful()) {
+                        // Sign in success, update UI with the signed-in user's information
+                        Log.d(PLUGIN_TAG, "Firebase Sign In with Credential succeed.");
+                        FirebaseUser user = mAuth.getCurrentUser();
 
-                            if (user == null) {
-                                Log.w(PLUGIN_TAG, "Ops, no Firebase user after Sign In with Credential succeed.");
-                                savedCall.reject("Ops, no Firebase user after Sign In with Credential succeed");
-                            } else {
-                                if (shouldLinkProvider) {
-                                    linkProvider(savedCall, credential);
-                                } else {
-                                    JSObject jsResult = build(savedCall);
-                                    savedCall.success(jsResult);
-                                }
-                            }
+                        if (user == null) {
+                            Log.w(PLUGIN_TAG, "Ops, no Firebase user after Sign In with Credential succeed.");
+                            savedCall.reject("Ops, no Firebase user after Sign In with Credential succeed");
                         } else {
-                            // If sign in fails, display a message to the user.
-                            Log.w(PLUGIN_TAG, "Firebase Sign In with Credential failure.", task.getException());
-                            savedCall.reject("Firebase Sign In with Credential failure.");
+                            JSObject jsResult = build(savedCall);
+                            savedCall.success(jsResult);
                         }
-                    }
-                }).addOnFailureListener(this.getActivity(), new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception ex) {
+                    } else {
                         // If sign in fails, display a message to the user.
-                        Log.w(PLUGIN_TAG, "Firebase Sign In with Credential failure.", ex);
+                        Log.w(PLUGIN_TAG, "Firebase Sign In with Credential failure.", task.getException());
                         savedCall.reject("Firebase Sign In with Credential failure.");
-
                     }
+                }
+            }).addOnFailureListener(this.getActivity(), new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception ex) {
+                // If sign in fails, display a message to the user.
+                Log.w(PLUGIN_TAG, "Firebase Sign In with Credential failure.", ex);
+                savedCall.reject("Firebase Sign In with Credential failure.");
+
+            }
         });
     }
 
@@ -288,7 +294,7 @@ public class CapacitorFirebaseAuth extends Plugin {
         final String providerId = savedCall.getString("providerId");
 
         if (currentUser == null) {
-            savedCall.reject("Can not link provider: user is not signed in");
+            savedCall.reject("Can not link provider because a user is not signed in");
             return;
         }
 
@@ -313,7 +319,7 @@ public class CapacitorFirebaseAuth extends Plugin {
                     }
 
                     Log.w(PLUGIN_TAG, "linkWithCredential:failure", task.getException());
-                    savedCall.reject("Can not link provider: " + Objects.requireNonNull(task.getException()).getLocalizedMessage());
+                    savedCall.reject(Objects.requireNonNull(task.getException()).getLocalizedMessage());
                 }
             })
             .addOnFailureListener(this.getActivity(), new OnFailureListener() {

@@ -9,7 +9,9 @@ import com.getcapacitor.PluginCall;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -37,8 +39,8 @@ public class EmailPasswordHandler implements ProviderHandler {
             return;
         }
 
-        String email = call.getString("email");
-        String password = call.getString("password");
+        final String email = call.getString("email");
+        final String password = call.getString("password");
 
         mAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
@@ -46,9 +48,11 @@ public class EmailPasswordHandler implements ProviderHandler {
                 public void onComplete(@NonNull Task<AuthResult> task) {
                     if (task.isSuccessful()) {
                         AuthResult authResult = task.getResult();
-                        isNewUser = authResult.getAdditionalUserInfo().isNewUser();
 
-                        plugin.handleAuthCredentials(authResult.getCredential());
+                        isNewUser = authResult.getAdditionalUserInfo().isNewUser();
+                        AuthCredential authCredential = EmailAuthProvider.getCredential(email, password);
+
+                        plugin.handleAuthCredentials(authCredential);
                     } else {
                         plugin.handleFailure(
                             "Can not sign in with email and password",

@@ -54,6 +54,9 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             else if ("phone" == provider) {
                 self.providers["phone"] = PhoneNumberProviderHandler()
                 self.providers["phone"]?.initialize(plugin: self)
+            } else if ("email-password" == provider) {
+                self.providers["email-password"] = EmailPasswordHandler()
+                self.providers["email-password"]?.initialize(plugin: self)
             }
         }
     }
@@ -152,7 +155,7 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 self.buildResult(authResult: authResult);
             }
             
-            return // It's a "link provider" call we don't want to authenticate the user
+            return // It's a "link provider" call we don't want to authenticate the user, because it should be signed in already
         }
         
         if (self.nativeAuth) {

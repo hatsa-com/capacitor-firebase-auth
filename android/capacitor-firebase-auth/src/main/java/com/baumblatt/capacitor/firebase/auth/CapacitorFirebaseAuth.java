@@ -5,6 +5,7 @@ import androidx.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.baumblatt.capacitor.firebase.auth.handlers.EmailPasswordHandler;
 import com.baumblatt.capacitor.firebase.auth.handlers.FacebookProviderHandler;
 import com.baumblatt.capacitor.firebase.auth.handlers.GoogleProviderHandler;
 import com.baumblatt.capacitor.firebase.auth.handlers.PhoneProviderHandler;
@@ -91,6 +92,11 @@ public class CapacitorFirebaseAuth extends Plugin {
                 this.providerHandlers.put(provider, new PhoneProviderHandler());
                 this.providerHandlers.get(provider).init(this);
                 Log.d(PLUGIN_TAG, "Phone Provider Initialized");
+            } else if (provider.equalsIgnoreCase(getContext().getString(R.string.email_password_provider_id))) {
+                Log.d(PLUGIN_TAG, "Initializing Email Provider");
+                this.providerHandlers.put(provider, new EmailPasswordHandler(mAuth));
+                this.providerHandlers.get(provider).init(this);
+                Log.d(PLUGIN_TAG, "Email Provider Initialized");
             }
         }
 
@@ -268,15 +274,15 @@ public class CapacitorFirebaseAuth extends Plugin {
                         savedCall.reject("Firebase Sign In with Credential failure.");
                     }
                 }
-            }).addOnFailureListener(this.getActivity(), new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception ex) {
-                // If sign in fails, display a message to the user.
-                Log.w(PLUGIN_TAG, "Firebase Sign In with Credential failure.", ex);
-                savedCall.reject("Firebase Sign In with Credential failure.");
-
-            }
-        });
+            })
+            .addOnFailureListener(this.getActivity(), new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception ex) {
+                    // If sign in fails, display a message to the user.
+                    Log.w(PLUGIN_TAG, "Firebase Sign In with Credential failure.", ex);
+                    savedCall.reject("Firebase Sign In with Credential failure.");
+                    }
+            });
     }
 
     private boolean isProviderLinked(final FirebaseUser currentUser, final String providerId) {

@@ -54,9 +54,9 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             else if ("phone" == provider) {
                 self.providers["phone"] = PhoneNumberProviderHandler()
                 self.providers["phone"]?.initialize(plugin: self)
-            } else if ("email-password" == provider) {
-                self.providers["email-password"] = EmailPasswordHandler()
-                self.providers["email-password"]?.initialize(plugin: self)
+            } else if ("password" == provider) {
+                self.providers["password"] = EmailPasswordHandler()
+                self.providers["password"]?.initialize(plugin: self)
             }
         }
     }

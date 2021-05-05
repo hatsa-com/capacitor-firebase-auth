@@ -2,6 +2,8 @@ package com.baumblatt.capacitor.firebase.auth;
 
 import android.content.Intent;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -121,7 +123,7 @@ public class CapacitorFirebaseAuth extends Plugin {
             call.reject("The provider is disable or unsupported");
         } else {
             if (handler.isAuthenticated()) {
-                JSObject jsResult = this.build(call);
+                JSObject jsResult = this.build(call,  null);
                 call.success(jsResult);
             } else {
                 this.saveCall(call);
@@ -246,7 +248,7 @@ public class CapacitorFirebaseAuth extends Plugin {
         if (this.nativeAuth) {
             nativeAuth(savedCall, credential);
         } else {
-            JSObject jsResult = this.build(savedCall);
+            JSObject jsResult = this.build(savedCall, null);
             savedCall.success(jsResult);
         }
     }
@@ -260,12 +262,13 @@ public class CapacitorFirebaseAuth extends Plugin {
                         // Sign in success, update UI with the signed-in user's information
                         Log.d(PLUGIN_TAG, "Firebase Sign In with Credential succeed.");
                         FirebaseUser user = mAuth.getCurrentUser();
+                        AuthResult authResult = task.getResult();
 
                         if (user == null) {
                             Log.w(PLUGIN_TAG, "Ops, no Firebase user after Sign In with Credential succeed.");
                             savedCall.reject("Ops, no Firebase user after Sign In with Credential succeed");
                         } else {
-                            JSObject jsResult = build(savedCall);
+                            JSObject jsResult = build(savedCall, authResult);
                             savedCall.success(jsResult);
                         }
                     } else {
@@ -307,7 +310,7 @@ public class CapacitorFirebaseAuth extends Plugin {
         if(isProviderLinked(currentUser, providerId)) {
             Log.d(PLUGIN_TAG, "Provider '" + providerId + "' is already linked to account.");
 
-            JSObject jsResult = build(savedCall);
+            JSObject jsResult = build(savedCall, null);
             savedCall.success(jsResult);
             return;
         }
@@ -319,7 +322,9 @@ public class CapacitorFirebaseAuth extends Plugin {
                     if (task.isSuccessful()) {
                         Log.d(PLUGIN_TAG, "linkWithCredential:success");
 
-                        JSObject jsResult = build(savedCall);
+                        AuthResult authResult = task.getResult();
+                        JSObject jsResult = build(savedCall, authResult);
+
                         savedCall.success(jsResult);
                         return;
                     }
@@ -351,12 +356,16 @@ public class CapacitorFirebaseAuth extends Plugin {
         }
     }
 
-    private JSObject build(PluginCall call) {
+    private JSObject build(PluginCall call, @Nullable AuthResult authResult) {
         Log.d(PLUGIN_TAG, "Building authentication result");
 
         JSObject jsResult = new JSObject();
         jsResult.put("callbackId", call.getCallbackId());
         jsResult.put("providerId", call.getString("providerId"));
+
+        if (authResult != null) {
+            jsResult.put("isNewUser", authResult.getAdditionalUserInfo().isNewUser());
+        }
 
         ProviderHandler handler = this.getProviderHandler(call);
         if (handler != null) {

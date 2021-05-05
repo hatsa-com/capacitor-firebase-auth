@@ -8,7 +8,6 @@ import GoogleSignIn
 class EmailPasswordHandler: NSObject, ProviderHandler {
 
     var plugin: CapacitorFirebaseAuth? = nil
-    var handlerResult: [String:Any] = [:]
 
     func initialize(plugin: CapacitorFirebaseAuth) {
         print("Initializing Email Password Handler")
@@ -23,22 +22,8 @@ class EmailPasswordHandler: NSObject, ProviderHandler {
             return
         }
         
-        Auth.auth().signIn(withEmail: email, password: password) { (authResult, error) in
-            if error != nil {
-                self.plugin?.handleError(message: error.debugDescription)
-                return
-            }
-            
-            let isNewUser = authResult?.additionalUserInfo?.isNewUser ?? false
-            
-            guard let credential = authResult?.credential else {
-                self.plugin?.handleError(message: "There's no credentials in AuthResult")
-                return
-            }
-            
-            self.handlerResult["isNewUser"] = isNewUser;
-            self.plugin?.handleAuthCredentials(credential: credential)
-        }
+        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+        self.plugin?.handleAuthCredentials(credential: credential)
     }
 
     func isAuthenticated() -> Bool {
@@ -46,12 +31,7 @@ class EmailPasswordHandler: NSObject, ProviderHandler {
     }
 
     func fillResult(data: PluginResultData) -> PluginResultData {
-        var jsResult: PluginResultData = [:]
-
-        jsResult.merge(data){ (current, _) in current }
-        jsResult.merge(self.handlerResult){ (current, _) in current }
-
-        return jsResult
+        return data
     }
 
     func signOut(){

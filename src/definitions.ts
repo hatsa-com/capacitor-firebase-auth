@@ -10,6 +10,8 @@ declare module "@capacitor/core" {
 export interface CapacitorFirebaseAuthPlugin {
   signIn(options: {providerId: string, data?: SignInOptions}): Promise<SignInResult>;
   signInAndLink(options: {providerId: string, data?: SignInOptions}): Promise<SignInResult>;
+  signInWithCustomToken(options: {customToken: string}): Promise<SignInResult>;
+  getCurrentUser(options: {}): Promise<GetCurrentUserResult>;
   unlink(options: {providerId: string}): Promise<void>;
   signOut(options: {}): Promise<void>;
 }
@@ -37,12 +39,34 @@ export class PhoneSignInResult {
   constructor(public verificationId: string, public verificationCode: string) {
   }
 }
+export class EmailSignInResult {
+  providerId = firebase.auth.EmailAuthProvider.PROVIDER_ID;
+  constructor(public verificationId: string, public verificationCode: string) {
+  }
+}
+export class CustomTokenSignInResult {
+  providerId = "";
+  constructor(public verificationId: string, public verificationCode: string) {
+  }
+}
 
-export type SignInResult = GoogleSignInResult | TwitterSignInResult | FacebookSignInResult | PhoneSignInResult;
+export type SignInResult = CustomTokenSignInResult | GoogleSignInResult | TwitterSignInResult | FacebookSignInResult | PhoneSignInResult;
 
 export interface PhoneSignInOptions {
   phone: string,
   verificationCode?: string
 }
+export interface EmailSignInOptions {
+  email: string,
+  password: string
+}
 
-export type SignInOptions = PhoneSignInOptions;
+export type GetCurrentUserResult = {
+  callbackId: string,
+  providerId: string,
+  displayName: string,
+  uid: string,
+  isAuthenticated: boolean
+};
+
+export type SignInOptions = PhoneSignInOptions | EmailSignInOptions;

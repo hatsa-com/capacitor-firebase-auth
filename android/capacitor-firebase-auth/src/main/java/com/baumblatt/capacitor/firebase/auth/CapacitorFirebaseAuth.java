@@ -1,6 +1,7 @@
 package com.baumblatt.capacitor.firebase.auth;
 
 import android.content.Intent;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -58,13 +59,13 @@ public class CapacitorFirebaseAuth extends Plugin {
 
         getConfigValue("nada");
 
-        String[] providers = Config.getArray(CONFIG_KEY_PREFIX+"providers", new String[0]);
-        this.nativeAuth = Config.getBoolean(CONFIG_KEY_PREFIX+"nativeAuth", false);
-        String languageCode = Config.getString(CONFIG_KEY_PREFIX+"languageCode", "en");
+        String[] providers = Config.getArray(CONFIG_KEY_PREFIX + "providers", new String[0]);
+        this.nativeAuth = Config.getBoolean(CONFIG_KEY_PREFIX + "nativeAuth", false);
+        String languageCode = Config.getString(CONFIG_KEY_PREFIX + "languageCode", "en");
 
         // FirebaseApp is not initialized in this process - Error #1
         Log.d(PLUGIN_TAG, "Verifying if the default FirebaseApp was initialized.");
-        if(FirebaseApp.getApps(this.getContext()).size() == 0) {
+        if (FirebaseApp.getApps(this.getContext()).size() == 0) {
             Log.d(PLUGIN_TAG, "Initializing the default FirebaseApp ");
             FirebaseApp.initializeApp(this.getContext());
         }
@@ -73,7 +74,7 @@ public class CapacitorFirebaseAuth extends Plugin {
         this.mAuth = FirebaseAuth.getInstance();
         this.mAuth.setLanguageCode(languageCode);
 
-        for (String provider: providers) {
+        for (String provider : providers) {
             if (provider.equalsIgnoreCase(getContext().getString(R.string.google_provider_id))) {
                 Log.d(PLUGIN_TAG, "Initializing Google Provider");
                 this.providerHandlers.put(provider, new GoogleProviderHandler());
@@ -123,7 +124,7 @@ public class CapacitorFirebaseAuth extends Plugin {
             call.reject("The provider is disable or unsupported");
         } else {
             if (handler.isAuthenticated()) {
-                JSObject jsResult = this.build(call,  null);
+                JSObject jsResult = this.build(call, null);
                 call.success(jsResult);
             } else {
                 this.saveCall(call);
@@ -175,6 +176,72 @@ public class CapacitorFirebaseAuth extends Plugin {
                     }
                 });
         }
+    }
+
+    @PluginMethod()
+    public void signInWithCustomToken(final PluginCall call) {
+        if (!call.getData().has("customToken")) {
+            call.reject("The customToken is required");
+            return;
+        }
+
+        final PluginCall savedCall = getSavedCall();
+        final String customToken = call.getString("customToken", null);
+
+        this.mAuth.signInWithCustomToken(customToken)
+            .addOnCompleteListener(this.getActivity(), new OnCompleteListener<AuthResult>() {
+                @Override
+                public void onComplete(@NonNull Task<AuthResult> task) {
+                    if (task.isSuccessful()) {
+                        // Sign in success, update UI with the signed-in user's information
+                        Log.d(PLUGIN_TAG, "Custom Token Sign In succeed.");
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        AuthResult authResult = task.getResult();
+
+                        if (user == null) {
+                            Log.w(PLUGIN_TAG, "Ops, no Firebase user after Sign In with Custom Token succeed.");
+                            savedCall.reject("Ops, no Firebase user after Sign In with Custom Token succeed");
+                        } else {
+                            JSObject jsResult = build(savedCall, authResult);
+                            savedCall.success(jsResult);
+                        }
+                    } else {
+                        // If sign in fails, display a message to the user.
+                        Log.w(PLUGIN_TAG, "Firebase Sign In with Custom Token failure.", task.getException());
+                        savedCall.reject("Firebase Sign In with Custom Token failure.");
+                    }
+                }
+            })
+            .addOnFailureListener(this.getActivity(), new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception ex) {
+                    // If sign in fails, display a message to the user.
+                    Log.w(PLUGIN_TAG, "Firebase Sign In with Custom Token failure.", ex);
+                    savedCall.reject("Firebase Sign In with Custom Token failure.");
+                }
+            });
+    }
+
+    @PluginMethod()
+    public void getCurrentUser(final PluginCall call) {
+        FirebaseUser currentUser = this.mAuth.getCurrentUser();
+        JSObject jsResult = new JSObject();
+
+        jsResult.put("callbackId", call.getCallbackId());
+
+        if (currentUser == null) {
+            jsResult.put("providerId", "");
+            jsResult.put("displayName", "");
+            jsResult.put("uid", "");
+            jsResult.put("isAuthenticated", false);
+        } else {
+            jsResult.put("providerId", currentUser.getProviderId());
+            jsResult.put("displayName", currentUser.getDisplayName());
+            jsResult.put("uid", currentUser.getUid());
+            jsResult.put("isAuthenticated", true);
+        }
+        
+        call.success(jsResult);
     }
 
     @PluginMethod()
@@ -284,13 +351,13 @@ public class CapacitorFirebaseAuth extends Plugin {
                     // If sign in fails, display a message to the user.
                     Log.w(PLUGIN_TAG, "Firebase Sign In with Credential failure.", ex);
                     savedCall.reject("Firebase Sign In with Credential failure.");
-                    }
+                }
             });
     }
 
     private boolean isProviderLinked(final FirebaseUser currentUser, final String providerId) {
         for (UserInfo userInfo : currentUser.getProviderData()) {
-            if(providerId.equals(userInfo.getProviderId())) {
+            if (providerId.equals(userInfo.getProviderId())) {
                 return true;
             }
         }
@@ -307,7 +374,7 @@ public class CapacitorFirebaseAuth extends Plugin {
             return;
         }
 
-        if(isProviderLinked(currentUser, providerId)) {
+        if (isProviderLinked(currentUser, providerId)) {
             Log.d(PLUGIN_TAG, "Provider '" + providerId + "' is already linked to account.");
 
             JSObject jsResult = build(savedCall, null);

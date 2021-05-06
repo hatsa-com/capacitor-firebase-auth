@@ -26,13 +26,21 @@ public class EmailPasswordHandler implements ProviderHandler {
 
     @Override
     public void signIn(PluginCall call) {
-        if (!call.getData().has("email") || !call.getData().has("password")) {
-            plugin.handleFailure("Please set keys: email, password", null);
+        if (!call.getData().has("data")) {
+            call.reject("The auth data is required");
             return;
         }
 
-        final String email = call.getString("email");
-        final String password = call.getString("password");
+        JSObject data = call.getObject("data", new JSObject());
+
+        String email = data.getString("email", null);
+        String password = data.getString("password", null);
+
+        if (email == null || email.equalsIgnoreCase("null") 
+            || password == null || password.equalsIgnoreCase("null")) {
+            call.reject("Email and password are required");
+            return;
+        }
 
         AuthCredential authCredential = EmailAuthProvider.getCredential(email, password);
         plugin.handleAuthCredentials(authCredential);

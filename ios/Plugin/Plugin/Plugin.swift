@@ -122,6 +122,34 @@ public class CapacitorFirebaseAuth: CAPPlugin {
             call.success()
         }
     }
+    
+    @objc func signInWithCustomToken(_ call: CAPPluginCall) {
+        guard let customToken = call.getString("customToken") else {
+            call.error("The customToken is required")
+            return
+        }
+        
+        Auth.auth().signIn(withCustomToken: customToken) { authResult, error in
+            if let error = error {
+                self.handleError(message: error.localizedDescription)
+                return
+            }
+            
+            self.buildResult(authResult: authResult)
+        }
+    }
+    
+    @objc func getCurrentUser(_ call: CAPPluginCall) {
+        let jsResult: PluginResultData = [
+            "callbackId": self.callbackId ?? "",
+            "providerId": Auth.auth().currentUser?.providerID ?? "",
+            "displayName": Auth.auth().currentUser?.displayName ?? "",
+            "uid": Auth.auth().currentUser?.uid ?? "",
+            "isAuthenticated": Auth.auth().currentUser != nil
+        ]
+        
+        call.success(jsResult)
+    }
 
     func getProvider(call: CAPPluginCall) -> ProviderHandler? {
         guard let providerId = call.getString("providerId") else {

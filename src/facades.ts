@@ -4,6 +4,7 @@ import 'firebase/auth';
 import { Observable, throwError } from 'rxjs';
 import {
 	CapacitorFirebaseAuthPlugin,
+	EmailSignInResult,
 	FacebookSignInResult,
 	GoogleSignInResult,
 	PhoneSignInResult,
@@ -50,6 +51,35 @@ export const cfaSignInGoogle = (): Observable<firebase.User> => {
 		plugin.signIn({providerId}).then((result: GoogleSignInResult) => {
 			// create the credentials
 			const credential = firebase.auth.GoogleAuthProvider.credential(result.idToken);
+
+			// web sign in
+			firebase.app().auth().signInWithCredential(credential)
+				.then((userCredential: firebase.auth.UserCredential) => {
+					observer.next(userCredential.user);
+					observer.complete();
+				})
+				.catch((reject: any) => {
+					observer.error(reject);
+				});
+		}).catch(reject => {
+			observer.error(reject);
+		});
+	});
+};
+
+/**
+ * Call the Email sign-in method on a native layer and sign-in on the web layer with the same credentials.
+ */
+export const cfaSignInEmail = (options: { email: string, password: string }): Observable<firebase.User> => {
+	return new Observable(observer => {
+		// get the provider id
+		const { email, password } = options;
+		const providerId = firebase.auth.EmailAuthProvider.PROVIDER_ID;
+
+		// native sign in
+		plugin.signIn({providerId, data: { email, password }}).then((_result: EmailSignInResult) => {
+			// create the credentials
+			const credential = firebase.auth.EmailAuthProvider.credential(email, password);
 
 			// web sign in
 			firebase.app().auth().signInWithCredential(credential)

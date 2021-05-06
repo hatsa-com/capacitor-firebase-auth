@@ -16,9 +16,14 @@ class EmailPasswordHandler: NSObject, ProviderHandler {
     }
 
     func signIn(call: CAPPluginCall) {
-        guard let email = call.getString("email"),
-              let password = call.getString("password") else {
-            self.plugin?.handleError(message: "Please set keys: email, password")
+        guard let data = call.getObject("data") else {
+            call.reject("The auth data is required")
+            return
+        }
+
+        guard let email = data["email"] as? String,
+              let password = data["password"] as? String else {
+            call.reject("Email and password are required")
             return
         }
         

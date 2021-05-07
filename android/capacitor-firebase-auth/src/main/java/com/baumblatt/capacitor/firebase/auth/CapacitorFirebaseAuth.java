@@ -14,6 +14,7 @@ import com.baumblatt.capacitor.firebase.auth.handlers.GoogleProviderHandler;
 import com.baumblatt.capacitor.firebase.auth.handlers.PhoneProviderHandler;
 import com.baumblatt.capacitor.firebase.auth.handlers.ProviderHandler;
 import com.baumblatt.capacitor.firebase.auth.handlers.TwitterProviderHandler;
+import com.getcapacitor.CapConfig;
 import com.getcapacitor.Config;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.NativePlugin;
@@ -31,8 +32,6 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserInfo;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
 
-import org.json.JSONObject;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -47,8 +46,9 @@ public class CapacitorFirebaseAuth extends Plugin {
     private static final String PLUGIN_TAG = "CapacitorFirebaseAuth";
 
     private FirebaseAuth mAuth;
-    private Map<String, ProviderHandler> providerHandlers = new HashMap<>();
-    private SparseArray<ProviderHandler> providerHandlerByRC = new SparseArray<>();
+    private final Map<String, ProviderHandler> providerHandlers = new HashMap<>();
+    private final SparseArray<ProviderHandler> providerHandlerByRC = new SparseArray<>();
+    private CapConfig config;
 
     private boolean nativeAuth = false;
 
@@ -56,12 +56,13 @@ public class CapacitorFirebaseAuth extends Plugin {
 
     public void load() {
         super.load();
+        this.config = getBridge().getConfig();
 
         getConfigValue("nada");
 
-        String[] providers = Config.getArray(CONFIG_KEY_PREFIX + "providers", new String[0]);
-        this.nativeAuth = Config.getBoolean(CONFIG_KEY_PREFIX + "nativeAuth", false);
-        String languageCode = Config.getString(CONFIG_KEY_PREFIX + "languageCode", "en");
+        String[] providers = config.getArray(CONFIG_KEY_PREFIX + "providers", new String[0]);
+        this.nativeAuth = config.getBoolean(CONFIG_KEY_PREFIX + "nativeAuth", false);
+        String languageCode = config.getString(CONFIG_KEY_PREFIX + "languageCode", "en");
 
         // FirebaseApp is not initialized in this process - Error #1
         Log.d(PLUGIN_TAG, "Verifying if the default FirebaseApp was initialized.");
@@ -185,7 +186,6 @@ public class CapacitorFirebaseAuth extends Plugin {
             return;
         }
 
-        final PluginCall savedCall = getSavedCall();
         final String customToken = call.getString("customToken", null);
 
         this.mAuth.signInWithCustomToken(customToken)
@@ -200,15 +200,21 @@ public class CapacitorFirebaseAuth extends Plugin {
 
                         if (user == null) {
                             Log.w(PLUGIN_TAG, "Ops, no Firebase user after Sign In with Custom Token succeed.");
-                            savedCall.reject("Ops, no Firebase user after Sign In with Custom Token succeed");
+                            call.reject("Ops, no Firebase user after Sign In with Custom Token succeed");
                         } else {
-                            JSObject jsResult = build(savedCall, authResult);
-                            savedCall.success(jsResult);
+                            JSObject jsResult = new JSObject();
+
+                            jsResult.put("callbackId", call.getCallbackId());
+                            jsResult.put("uid", authResult.getUser().getUid());
+                            jsResult.put("displayName", authResult.getUser().getDisplayName());
+                            jsResult.put("email", authResult.getUser().getEmail());
+
+                            call.success(jsResult);
                         }
                     } else {
                         // If sign in fails, display a message to the user.
                         Log.w(PLUGIN_TAG, "Firebase Sign In with Custom Token failure.", task.getException());
-                        savedCall.reject("Firebase Sign In with Custom Token failure.");
+                        call.reject("Firebase Sign In with Custom Token failure.");
                     }
                 }
             })
@@ -217,7 +223,7 @@ public class CapacitorFirebaseAuth extends Plugin {
                 public void onFailure(@NonNull Exception ex) {
                     // If sign in fails, display a message to the user.
                     Log.w(PLUGIN_TAG, "Firebase Sign In with Custom Token failure.", ex);
-                    savedCall.reject("Firebase Sign In with Custom Token failure.");
+                    call.reject("Firebase Sign In with Custom Token failure.");
                 }
             });
     }
@@ -240,7 +246,7 @@ public class CapacitorFirebaseAuth extends Plugin {
             jsResult.put("uid", currentUser.getUid());
             jsResult.put("isAuthenticated", true);
         }
-        
+
         call.success(jsResult);
     }
 

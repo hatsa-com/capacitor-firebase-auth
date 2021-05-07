@@ -125,9 +125,17 @@ public class CapacitorFirebaseAuth: CAPPlugin {
     
     @objc func signInWithCustomToken(_ call: CAPPluginCall) {
         guard let customToken = call.getString("customToken") else {
-            call.error("The customToken is required")
+            self.handleError(message: "The customToken is required")
             return
         }
+        
+        guard let callbackId = call.callbackId else {
+            call.error("The call has no callbackId")
+            return
+        }
+        
+        self.callbackId = callbackId
+        call.save()
         
         Auth.auth().signIn(withCustomToken: customToken) { authResult, error in
             if let error = error {
@@ -135,7 +143,19 @@ public class CapacitorFirebaseAuth: CAPPlugin {
                 return
             }
             
-            self.buildResult(authResult: authResult)
+            guard let authResult = authResult else {
+                self.handleError(message: "Auth Result is null")
+                return
+            }
+            
+            let jsResult: PluginResultData = [
+                "callbackId": self.callbackId ?? "",
+                "uid": authResult.user.uid,
+                "displayName": authResult.user.displayName ?? "",
+                "email": authResult.user.email ?? "",
+            ]
+            
+            call.success(jsResult);
         }
     }
     

@@ -4,9 +4,11 @@ import 'firebase/auth';
 import { Observable, throwError } from 'rxjs';
 import {
 	CapacitorFirebaseAuthPlugin,
+	EmailSignInOptions,
 	EmailSignInResult,
 	FacebookSignInResult,
 	GoogleSignInResult,
+	PhoneSignInOptions,
 	PhoneSignInResult,
 	SignInOptions,
 	TwitterSignInResult
@@ -25,6 +27,8 @@ export const cfaSignIn = (providerId: string, data?: SignInOptions): Observable<
 	const facebookProvider = new firebase.auth.FacebookAuthProvider().providerId;
 	const twitterProvider = new firebase.auth.TwitterAuthProvider().providerId;
 	const phoneProvider = new firebase.auth.PhoneAuthProvider().providerId;
+	const emailProvider = new firebase.auth.EmailAuthProvider().providerId;
+
 	switch (providerId) {
 		case googleProvider:
 			return cfaSignInGoogle();
@@ -33,7 +37,10 @@ export const cfaSignIn = (providerId: string, data?: SignInOptions): Observable<
 		case facebookProvider:
 			return cfaSignInFacebook();
 		case phoneProvider:
-			return cfaSignInPhone(data.phone, data.verificationCode);
+			const { phone, verificationCode } = (data as PhoneSignInOptions) || {};
+			return cfaSignInPhone(phone, verificationCode);
+		case emailProvider:
+			return cfaSignInEmail(data as EmailSignInOptions);
 		default:
 			return throwError(new Error(`The '${providerId}' provider was not supported`));
 	}

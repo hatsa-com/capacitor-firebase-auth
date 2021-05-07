@@ -45,7 +45,6 @@ export class EmailSignInResult {
   }
 }
 export class CustomTokenSignInResult {
-  providerId = "";
   constructor(public verificationId: string, public verificationCode: string) {
   }
 }

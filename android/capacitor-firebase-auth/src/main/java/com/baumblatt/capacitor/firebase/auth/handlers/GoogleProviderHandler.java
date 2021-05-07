@@ -1,12 +1,12 @@
 package com.baumblatt.capacitor.firebase.auth.handlers;
 
 import android.content.Intent;
-import androidx.annotation.NonNull;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.baumblatt.capacitor.firebase.auth.CapacitorFirebaseAuth;
 import com.baumblatt.capacitor.firebase.auth.R;
-import com.getcapacitor.Config;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PluginCall;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -17,7 +17,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -28,7 +27,7 @@ import com.auth0.android.jwt.JWT;
 
 import static com.baumblatt.capacitor.firebase.auth.CapacitorFirebaseAuth.CONFIG_KEY_PREFIX;
 
-public class GoogleProviderHandler implements ProviderHandler, GoogleApiClient.OnConnectionFailedListener {
+public class GoogleProviderHandler implements ProviderHandler {
     public static final int RC_GOOGLE_SIGN_IN = 9001;
     private static final String GOOGLE_TAG = "GoogleProviderHandler";
 
@@ -39,7 +38,7 @@ public class GoogleProviderHandler implements ProviderHandler, GoogleApiClient.O
     public void init(CapacitorFirebaseAuth plugin) {
         this.plugin = plugin;
 
-        String[] permissions = Config.getArray(CONFIG_KEY_PREFIX + "permissions.google", new String[0]);
+        String[] permissions = this.plugin.getConfig().getArray(CONFIG_KEY_PREFIX + "permissions.google", new String[0]);
 
         GoogleApiAvailability googleAPI = GoogleApiAvailability.getInstance();
         int result = googleAPI.isGooglePlayServicesAvailable(this.plugin.getContext());
@@ -50,16 +49,21 @@ public class GoogleProviderHandler implements ProviderHandler, GoogleApiClient.O
         }
 
         GoogleSignInOptions.Builder gsBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(this.plugin.getContext().getString(R.string.default_web_client_id))
-                .requestEmail();
-
+            .requestIdToken(this.plugin.getContext().getString(R.string.default_web_client_id))
+            .requestEmail();
 
         for (String permission : permissions) {
             try {
                 gsBuilder.requestScopes(new Scope(permission));
             } catch (Exception e) {
-                Log.w(GOOGLE_TAG, String.format("Failure requesting the scope at index s%", permission));
+                Log.w(GOOGLE_TAG, String.format("Failure requesting the scope at index %s", permission));
             }
+        }
+
+        String hostedDomain = this.plugin.getConfig().getString(CONFIG_KEY_PREFIX + "properties.google.hostedDomain");
+
+        if (hostedDomain != null) {
+            gsBuilder.setHostedDomain(hostedDomain);
         }
 
         GoogleSignInOptions gso = gsBuilder.build();
@@ -118,10 +122,18 @@ public class GoogleProviderHandler implements ProviderHandler, GoogleApiClient.O
                 if (new JWT(token).isExpired(10)) {
                     try {
                         Task<GoogleSignInAccount> task = this.mGoogleSignInClient.silentSignIn();
-                        account = task.getResult(ApiException.class);
-                        Log.d(GOOGLE_TAG, "Google silentSignIn succeed.");
+                        if (task.isSuccessful()) {
+                            Log.d(GOOGLE_TAG, "Google silentSignIn isSuccessful.");
+                            // There's immediate result available.
+                            account = task.getResult(ApiException.class);
+                            Log.d(GOOGLE_TAG, "Google silentSignIn succeed.");
+                            return true;
+                        } else {
+                            // There's no immediate result ready
+                            return false;
+                        }
                     } catch (ApiException exception) {
-                        Log.w(GOOGLE_TAG, String.format("Google silentSignIn failure: s%", exception.getLocalizedMessage()));
+                        Log.w(GOOGLE_TAG, String.format("Google silentSignIn failure: %s", exception.getLocalizedMessage()));
 
                         return false;
                     }
@@ -136,7 +148,11 @@ public class GoogleProviderHandler implements ProviderHandler, GoogleApiClient.O
     @Override
     public void fillResult(JSObject jsResult) {
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this.plugin.getContext());
-        jsResult.put("idToken", account.getIdToken());
+        if (account != null)  {
+            jsResult.put("idToken", account.getIdToken());
+        } else {
+            Log.w(GOOGLE_TAG, "Ops, there was not last signed in account on google api.");
+        }
     }
 
     @Override
@@ -147,10 +163,5 @@ public class GoogleProviderHandler implements ProviderHandler, GoogleApiClient.O
                 Log.i(GOOGLE_TAG, "Google Sign Out succeed.");
             }
         });
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.i(GOOGLE_TAG, "Unresolvable failure in connecting to Google APIs");
     }
 }

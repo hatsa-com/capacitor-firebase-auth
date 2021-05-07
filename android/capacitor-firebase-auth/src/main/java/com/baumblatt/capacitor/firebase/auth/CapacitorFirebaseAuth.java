@@ -54,6 +54,10 @@ public class CapacitorFirebaseAuth extends Plugin {
 
     private boolean shouldLinkProvider = false;
 
+    public CapConfig getConfig() {
+        return config;
+    }
+
     public void load() {
         super.load();
         this.config = getBridge().getConfig();
